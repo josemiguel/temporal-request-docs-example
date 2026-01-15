@@ -154,6 +154,44 @@ async def get_workflow_status(workflow_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/workflows")
+async def list_workflows():
+    """List all document request workflows."""
+    try:
+        client = await Client.connect(TEMPORAL_HOST)
+        workflows = []
+        
+        async for workflow in client.list_workflows(
+            query="WorkflowType = 'DocumentRequestWorkflow'"
+        ):
+            workflow_status = "Unknown"
+            if workflow.status.name == "RUNNING":
+                workflow_status = "Running"
+            elif workflow.status.name == "COMPLETED":
+                workflow_status = "Completed"
+            elif workflow.status.name == "FAILED":
+                workflow_status = "Failed"
+            elif workflow.status.name == "CANCELED":
+                workflow_status = "Canceled"
+            elif workflow.status.name == "TERMINATED":
+                workflow_status = "Terminated"
+            elif workflow.status.name == "TIMED_OUT":
+                workflow_status = "Timed Out"
+            
+            workflows.append({
+                "workflow_id": workflow.id,
+                "status": workflow_status,
+                "start_time": workflow.start_time.isoformat() if workflow.start_time else None,
+            })
+        
+        # Sort by start_time descending (newest first)
+        workflows.sort(key=lambda x: x["start_time"] or "", reverse=True)
+        
+        return JSONResponse({"success": True, "workflows": workflows})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
 

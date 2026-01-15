@@ -125,7 +125,7 @@
             <div class="max-w-4xl mx-auto space-y-8">
                 
                 <!-- Start New Request -->
-                <section v-if="!workflowId" class="animate-fade-in">
+                <section v-if="!workflowId" class="animate-fade-in space-y-6">
                     <div class="glass-card rounded-2xl p-8 text-center">
                         <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-violet/20 to-mint/20 flex items-center justify-center">
                             <svg class="w-10 h-10 text-violet" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -145,6 +145,75 @@
                             <span v-else>Start New Request</span>
                         </button>
                     </div>
+
+                    <!-- Existing Workflows List -->
+                    <div class="glass-card rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-slate/50 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-mist" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold">Existing Requests</h3>
+                                    <p class="text-xs text-mist">Select a workflow to continue</p>
+                                </div>
+                            </div>
+                            <button @click="loadWorkflows" class="p-2 rounded-lg hover:bg-slate/50 transition-colors" title="Refresh list">
+                                <svg class="w-4 h-4 text-mist" :class="{ 'animate-spin': loadingWorkflows }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div v-if="loadingWorkflows" class="text-center py-8">
+                            <svg class="w-8 h-8 animate-spin mx-auto text-violet" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                            <p class="text-mist text-sm mt-2">Loading workflows...</p>
+                        </div>
+
+                        <div v-else-if="workflows.length === 0" class="text-center py-8">
+                            <svg class="w-12 h-12 mx-auto text-mist/50 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <p class="text-mist text-sm">No existing workflows found</p>
+                        </div>
+
+                        <div v-else class="space-y-2 max-h-80 overflow-y-auto">
+                            <div v-for="wf in workflows" :key="wf.workflow_id"
+                                @click="selectWorkflow(wf.workflow_id)"
+                                class="flex items-center justify-between p-4 rounded-xl bg-slate/30 hover:bg-slate/50 cursor-pointer transition-all border border-transparent hover:border-violet/30">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                                        :class="getWorkflowStatusBg(wf.status)">
+                                        <svg v-if="wf.status === 'Completed'" class="w-4 h-4 text-mint" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                        <svg v-else-if="wf.status === 'Running'" class="w-4 h-4 text-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <svg v-else-if="wf.status === 'Failed' || wf.status === 'Timed Out'" class="w-4 h-4 text-coral" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                        <svg v-else class="w-4 h-4 text-mist" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="font-mono text-sm text-pearl truncate">{{ wf.workflow_id }}</p>
+                                        <p class="text-xs text-mist">{{ formatDate(wf.start_time) }}</p>
+                                    </div>
+                                </div>
+                                <span class="px-3 py-1 rounded-full text-xs font-medium flex-shrink-0 ml-3"
+                                    :class="getWorkflowStatusClass(wf.status)">
+                                    {{ wf.status }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                 </section>
 
                 <!-- Active Workflow -->
@@ -153,6 +222,11 @@
                     <div class="glass-card rounded-xl p-4 animate-slide-up" style="animation-delay: 0ms">
                         <div class="flex flex-wrap items-center justify-between gap-4">
                             <div class="flex items-center gap-3">
+                                <button @click="resetWorkflow" class="w-10 h-10 rounded-lg bg-slate/50 hover:bg-slate/70 flex items-center justify-center transition-colors" title="Back to list">
+                                    <svg class="w-5 h-5 text-mist" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                                    </svg>
+                                </button>
                                 <div class="w-10 h-10 rounded-lg bg-violet/20 flex items-center justify-center">
                                     <svg class="w-5 h-5 text-violet" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
@@ -160,7 +234,7 @@
                                 </div>
                                 <div>
                                     <p class="text-sm text-mist">Request ID</p>
-                                    <p class="font-mono text-sm text-pearl">{{ workflowId }}</p>
+                                    <p class="font-mono text-sm text-pearl truncate max-w-xs">{{ workflowId }}</p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
@@ -395,6 +469,8 @@
                 const workflowId = ref(null);
                 const loading = ref(false);
                 const refreshing = ref(false);
+                const loadingWorkflows = ref(false);
+                const workflows = ref([]);
                 const error = ref(null);
                 const status = ref({
                     status: 'Not started',
@@ -433,6 +509,46 @@
                     if (doc?.is_valid === true) return 'text-mint';
                     if (doc?.is_valid === false) return 'text-coral';
                     return 'text-mist';
+                };
+
+                const getWorkflowStatusBg = (status) => {
+                    if (status === 'Completed') return 'bg-mint/20';
+                    if (status === 'Running') return 'bg-amber/20';
+                    if (status === 'Failed' || status === 'Timed Out') return 'bg-coral/20';
+                    return 'bg-slate/50';
+                };
+
+                const getWorkflowStatusClass = (status) => {
+                    if (status === 'Completed') return 'bg-mint/20 text-mint';
+                    if (status === 'Running') return 'bg-amber/20 text-amber';
+                    if (status === 'Failed' || status === 'Timed Out') return 'bg-coral/20 text-coral';
+                    return 'bg-slate/50 text-mist';
+                };
+
+                const formatDate = (isoString) => {
+                    if (!isoString) return 'Unknown';
+                    const date = new Date(isoString);
+                    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                };
+
+                const loadWorkflows = async () => {
+                    loadingWorkflows.value = true;
+                    try {
+                        const response = await fetch('/api/workflows');
+                        const data = await response.json();
+                        if (data.success) {
+                            workflows.value = data.workflows;
+                        }
+                    } catch (e) {
+                        console.error('Failed to load workflows:', e);
+                    } finally {
+                        loadingWorkflows.value = false;
+                    }
+                };
+
+                const selectWorkflow = async (id) => {
+                    workflowId.value = id;
+                    await refreshStatus();
                 };
 
                 const startWorkflow = async () => {
@@ -516,6 +632,8 @@
                         passport: '',
                         address: ''
                     };
+                    // Reload workflows list
+                    loadWorkflows();
                 };
 
                 // Auto-refresh status every 5 seconds when workflow is active
@@ -528,10 +646,17 @@
                     }
                 });
 
+                // Load workflows on mount
+                onMounted(() => {
+                    loadWorkflows();
+                });
+
                 return {
                     workflowId,
                     loading,
                     refreshing,
+                    loadingWorkflows,
+                    workflows,
                     error,
                     status,
                     documents,
@@ -539,6 +664,11 @@
                     validCount,
                     getDocumentStatusBg,
                     getDocumentStatusIcon,
+                    getWorkflowStatusBg,
+                    getWorkflowStatusClass,
+                    formatDate,
+                    loadWorkflows,
+                    selectWorkflow,
                     startWorkflow,
                     submitDocument,
                     refreshStatus,
